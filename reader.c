@@ -9,12 +9,16 @@ int* decimalToBinary(int);
 int fromBinaryToDecimal(int[]);
 void fromArraytoWord(char* ,int[],int n);
 int* fromWordToArray(char[], int n);
-void encode();
-void decode();
+void imEncode();
+void imDecode();
+void wavEncode();
+void wavDecode();
+int getInx(unsigned char word[], int s);
 
 int getInfo(FILE* fpo);
 int* comparison(FILE* f1, FILE* f2, int size1, int size2, int* size);
 unsigned char* readBMP(char* filename, int* sentence, int dim);
+unsigned char* readWav(char* filename, int* sentence, int dim);
 unsigned char* vectFusion(unsigned char vec1[], int n, unsigned char* vec2, int m);
 
 int main()
@@ -24,8 +28,10 @@ int main()
     do
     {
         printf("0)Exit\n");
-        printf("1)Encode an image\n");
-        printf("2)Decode an image\n");
+        printf("1)Encode text from bmp image\n");
+        printf("2)Decode text from bmp image\n");
+        printf("3)Encode text from wav audio\n");
+        printf("4)Decode text from wav audio\n");
         printf("Select an action --> ");
         scanf("%d", &scelta);
         switch (scelta)
@@ -33,11 +39,16 @@ int main()
             case 0:
                 exit(0);
             case 1:
-                encode();
+                imEncode();
                 break;
             case 2:
-                decode();
+                imDecode();
                 break;
+            case 3:
+                wavEncode();
+                break;
+            case 4:
+                wavDecode();
             default:
                 printf("Choose a valid action!\n");
                 break;
@@ -46,7 +57,7 @@ int main()
     return 0;
 }
 
-void encode()
+void imEncode()
 {
     char name[50];
     char word[1000];
@@ -76,7 +87,7 @@ void encode()
     free(vect);
 }
 
-void decode()
+void imDecode()
 {
     int size1, size2, dim;
     int* differences;
@@ -302,10 +313,11 @@ int* comparison(FILE* f1, FILE* f2, int size1, int size2, int* size)
 	{
 		if (*(l1+i) != *(l2+i))
 		{
+            printf("%d) # %d - %d #\n", i, *(l1+i), *(l2+i));
 			c++;
 		} else
 		{
-			//printf("%d) # %d - %d #\n", i, *(l1+i), *(l2+i));
+
 		}
 	}
 
@@ -328,4 +340,126 @@ int* comparison(FILE* f1, FILE* f2, int size1, int size2, int* size)
 	free(l1);
 	free(l2);
 	return differences;
+}
+
+void wavEncode()
+{
+    char name[50];
+    char word[1000];
+    int size = 0;
+    int* vect;
+    char ch = getchar();
+    unsigned char* data;
+    printf("Insert the audio you want to use --> ");
+    scanf("%s", name);
+    char stocazzo = getchar();
+    printf("Insert the sentence you want to hide -> ");
+    fgets(word, sizeof(word), stdin);
+    size = strlen(word)-1;
+    printf("Size --> %d", size);
+    getchar();
+
+
+    vect = fromWordToArray(word, size);
+    printf("-----------------\n");
+    /*
+    for (int i = 0; i < size*8; i++){
+        printf("%d <-- 0x%x\n", *(vect+i), (vect+i));
+    }
+    */
+    data = readWav(name, vect, size*8);
+    free(data);
+    free(vect);
+}
+
+unsigned char* readWav(char* filename, int* sentence, int dim)
+{
+
+    FILE* f1 = fopen(filename, "rb");
+    unsigned char info[100];
+    fread(info, sizeof(unsigned char), 100, f1);
+    int dataStart;
+    dataStart = getInx(info, 100);
+    int dataSize = *(int*)&info[dataStart];
+    fclose(f1);
+
+    FILE* f = fopen(filename, "rb");
+    fread(info, sizeof(unsigned char), (dataStart+4), f);
+    unsigned char* data = calloc(sizeof(unsigned char), dataSize);
+    unsigned char* prova;
+    printf("%d\n", dataSize);
+    fread(data, sizeof(unsigned char), dataSize, f);
+    for (int i = 0; i < dim; i++)
+    {
+        if (i > dataSize)
+        {
+            break;
+        }
+
+        *(data+i) += (*(sentence+i))+1;
+    }
+
+    prova = vectFusion(info, dataStart+4, data, dataSize);
+
+    char nome[50];
+    printf("Insert name of the encoded audio --> ");
+    scanf("%s", nome);
+    FILE* r = fopen(nome, "wb");
+    fwrite(prova, sizeof(unsigned char), dataSize+dataStart, r);
+    fclose(r);
+    fclose(f);
+
+    free(data);
+    return prova;
+}
+
+int getInx(unsigned char word[], int s)
+{
+    int i;
+
+    for (i = 0; i < s; i++)
+    {
+        if (word[i] == 'd')
+        {
+            if (word[i+1] == 'a')
+            {
+                break;
+            }
+        }
+    }
+
+    return i+4;
+}
+
+void wavDecode()
+{
+    int size1, size2, dim;
+    int* differences;
+    char nome1[20], nome2[20];
+    printf("Insert audio to decode --> ");
+    scanf("%s", nome1);
+    printf("Insert original audio --> ");
+    scanf("%s", nome2);
+	FILE* f1 = fopen(nome1, "rb");
+	FILE* f2 = fopen(nome2, "rb");
+    fseek(f1, 0, SEEK_END);
+    size1 = ftell(f1);
+    //printf("%d\n", size1);
+    fseek(f2, 0, SEEK_END);
+	size2 = ftell(f2);
+    //printf("%d\n", size2);
+	fclose(f1);
+	fclose(f2);
+
+	FILE* f10 = fopen(nome1, "rb");
+	FILE* f20 = fopen(nome2, "rb");
+    dim = 0;
+	differences = comparison(f10, f20, size1, size2, &dim);
+    printf("%d\n", dim);
+	fclose(f10);
+	fclose(f20);
+    char* frase = calloc(sizeof(char), dim);
+    fromArraytoWord(frase, differences, dim);
+    printf("\n\nThe decoded sentence is --> %s\n\n", frase);
+    free(differences);
 }
