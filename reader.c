@@ -9,10 +9,10 @@ int* decimalToBinary(int);
 int fromBinaryToDecimal(int[]);
 void fromArraytoWord(char* ,int[],int n);
 int* fromWordToArray(char[], int n);
-void imEncode();
-void imDecode();
-void wavEncode();
-void wavDecode();
+void imEncode(); //Hide a text in an image
+void imDecode(); //Decode a text from an image
+void wavEncode(); //Hide a text in a wav audio
+void wavDecode(); //Decode a text from a wav audio
 int getInx(unsigned char word[], int s);
 
 int getInfo(FILE* fpo);
@@ -74,14 +74,9 @@ void imEncode()
     printf("Size --> %d", size);
     getchar();
 
-
     vect = fromWordToArray(word, size);
     printf("-----------------\n");
-    /*
-    for (int i = 0; i < size*8; i++){
-        printf("%d <-- 0x%x\n", *(vect+i), (vect+i));
-    }
-    */
+
     data = readBMP(name, vect, size*8);
     free(data);
     free(vect);
@@ -123,9 +118,8 @@ unsigned char* readBMP(char* filename, int* sentence, int dim)
 
     int width = *(int*)&info[18];
     int height = *(int*)&info[22];
-
     int size = 3 * width * height;
-    //printf("%d", size);
+
     unsigned char* data = calloc(sizeof(unsigned char), size);
     unsigned char* prova;
 
@@ -142,16 +136,6 @@ unsigned char* readBMP(char* filename, int* sentence, int dim)
     }
 
     prova = vectFusion(info, 54, data, size);
-
-    /*
-    for (int i = 0; i < 54+size; i++){
-
-        printf("i = %d - %d\n", i, *(prova+i));
-
-    }
-    */
-
-    //printf("\n---------\n");
     char nome[50];
     printf("Insert name of the encoded image --> ");
     scanf("%s", nome);
@@ -159,7 +143,6 @@ unsigned char* readBMP(char* filename, int* sentence, int dim)
     fwrite(prova, sizeof(unsigned char), size+54, r);
     fclose(r);
     fclose(f);
-
     free(data);
     return prova;
 }
@@ -189,49 +172,39 @@ unsigned char* vectFusion(unsigned char vec1[], int n, unsigned char* vec2, int 
 
 int fromBinaryToDecimal(int binario[])
 {
-
 	int risultato = 0;
 	int j=0;
+
 	for (int i=7;i>0;i--)
 	{
 		if(binario[i]==1)
 		{
 			risultato+= pow(2,7-i);
-
 		}
 
 	}
 
-
-
 	return risultato;
-
 }
 
 void fromArraytoWord(char *res,int a[],int sizeOfA)
 {
+	int byte[8];
+	int j=0;
+	int c=0;
 
-
-		int byte[8];
-		int j=0;
-		int c=0;
-
-
-		for(int i=0;i<sizeOfA;i++)
+	for(int i=0;i<sizeOfA;i++)
+	{
+		byte[j]=a[i];
+		j++;
+		if(j==8)
 		{
-			byte[j]=a[i];
-
-			j++;
-
-			if(j==8)
-			{
-				j=0;
-					res[c]=fromBinaryToDecimal(byte);
-
-				c++;
-
-			}
+			j=0;
+			res[c]=fromBinaryToDecimal(byte);
+			c++;
 		}
+	}
+
 	return;
 }
 
@@ -245,7 +218,9 @@ int* decimalToBinary (int n)
         {
     		a[i]=n%2;
     		n=n/2;
-        } else {
+        }
+        else
+        {
             a[i] = 0;
         }
 	}
@@ -271,12 +246,7 @@ int* fromWordToArray(char parola[] ,int size_parola)
         }
 	}
     r = 0;
-    /*
-    while (r < size_parola*8){
-        printf("%d <-- 0x%x\n", *(vett+r), (vett+r));
-        r++;
-    }
-    */
+
     return vett;
 }
 
@@ -287,14 +257,10 @@ int getInfo(FILE* fpo)
 	char char_2[2];
 	fseek(fpo,0,0);
 	fread(char_2,2, 1, fpo);
-	//printf(" - Firma: %c%c\n",char_2[0],char_2[1]);
 	fseek(fpo,2,0);
 	fread(&size, 1, sizeof(int), fpo);
-	//printf(" - Dimensione File: %d\n",size);
 	fseek(fpo,10,0);
 	fread(&int_var, 1, sizeof(int), fpo);
-	//printf(" - Offset: %d\n",int_var);
-	//printf("\n-----------------------\n");
 
 	return size;
 }
@@ -362,11 +328,6 @@ void wavEncode()
 
     vect = fromWordToArray(word, size);
     printf("-----------------\n");
-    /*
-    for (int i = 0; i < size*8; i++){
-        printf("%d <-- 0x%x\n", *(vect+i), (vect+i));
-    }
-    */
     data = readWav(name, vect, size*8);
     free(data);
     free(vect);
@@ -444,10 +405,10 @@ void wavDecode()
 	FILE* f2 = fopen(nome2, "rb");
     fseek(f1, 0, SEEK_END);
     size1 = ftell(f1);
-    //printf("%d\n", size1);
+    
     fseek(f2, 0, SEEK_END);
 	size2 = ftell(f2);
-    //printf("%d\n", size2);
+
 	fclose(f1);
 	fclose(f2);
 
